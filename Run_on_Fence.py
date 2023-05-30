@@ -19,11 +19,11 @@ class Player(pg.sprite.Sprite):
         初期化メソッド
         """
         super().__init__()
-        self.imgs = [pg.transform.rotozoom(pg.image.load(f"ex05/fig/run{i}.png"), 0, 0.4) for i in range(1, 3)]  # アクションに合わせた画像をすべて読み込む
+        self.imgs = [pg.transform.rotozoom(pg.image.load(f"ex05/fig/run{i}.png"), 0, 0.4) for i in range(1, 4)]  # アクションに合わせた画像をすべて読み込む
         self.img = self.imgs[0]  # 描画画像の初期化
-        width = self.img.get_width()
-        height = self.img.get_height()
-        self.image = pg.Surface((width*3/4, height))  # キャラ画像とは別に当たり判定を設定
+        self.width = self.img.get_width()
+        self.height = self.img.get_height()
+        self.image = pg.Surface((self.width*3/4, self.height))  # キャラ画像とは別に当たり判定を設定
         pg.Surface.fill(self.image, (100, 100, 100))
         self.rect = self.image.get_rect()
         self.rect.bottom = HEIGHT - 174
@@ -32,6 +32,7 @@ class Player(pg.sprite.Sprite):
         self.tmr = 0  # 走行時間を格納する変数
         self.jump = False  # ジャンプ中か否かの変数
         self.jump_tmr = 0  # ジャンプ時間を格納する変数
+        self.sliding = False #スライディング中か否かの変数
     
     def update(self, screen: pg.Surface):
         """
@@ -49,12 +50,25 @@ class Player(pg.sprite.Sprite):
                 self.jump = False
                 self.jump_tmr = 0
             screen.blit(self.img, self.rect)
+
+        elif self.sliding:
+            self.image = self.imgs[2]
+            self.rect = self.image.get_rect()
+            self.rect.centerx = WIDTH/2
+            self.rect.bottom = HEIGHT-185
+            self.sliding_tmr = 0
+            screen.blit(self.image, self.rect) #スライディングしているキャラクターを描画
                 
         else:  # 走行中の動作
+            self.image = pg.Surface((self.width*3/4, self.height))  # キャラ画像とは別に当たり判定を設定
+            pg.Surface.fill(self.image, (100, 100, 100))
             self.tmr += 1
             if self.tmr % 5 == 0:  # 画像を0.1秒ごとに切り替え
                 self.num_r += 1
                 self.img = self.imgs[self.num_r%2]
+            self.rect = self.image.get_rect()
+            self.rect.bottom = HEIGHT - 174
+            self.rect.centerx = WIDTH/2
             screen.blit(self.img, self.rect)
 
 
@@ -81,6 +95,25 @@ class Object(pg.sprite.Sprite):
         """
         self.rect.move_ip(-10, 0)
         screen.blit(self.image, self.rect)
+        if self.rect.right < 0:  # 画面左に到達したとき
+            self.kill()  # グループ内が増えすぎないようにグループから削除
+
+class Object2(pg.sprite.Sprite):
+    """
+    障害物2(空中)に関するクラス
+    """
+    
+    def __init__(self):
+        super().__init__()
+        self.image = pg.Surface((50, 100))
+        pg.draw.rect(self.image, (0, 0, 0), pg.Rect(0, 0, 50, 100))
+        self.rect = self.image.get_rect()
+        self.rect.bottom = HEIGHT - 350
+        self.rect.left = WIDTH
+        
+    def update(self, screen: pg.Surface):
+        self.rect.move_ip(-10, 0) #障害物2を動かす
+        screen.blit(self.image, self.rect) #障害物2を描画
         if self.rect.right < 0:  # 画面左に到達したとき
             self.kill()  # グループ内が増えすぎないようにグループから削除
 
@@ -174,6 +207,10 @@ def main():
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_SPACE:  # SPACEキーを押すとジャンプ
                     player.jump = True
+                if event.key == pg.K_DOWN:
+                    player.sliding = True #下キーでスライディング
+            else:
+                player.sliding = False
         
         for i in range(len(bgs)):  # 背景画像を複数枚同時に処理
             screen.blit(bgs[i], [WIDTH*i-bg_x, 0])
@@ -184,8 +221,11 @@ def main():
             n = tmr
             r = random.randint(0, 100)
         if tmr - n  == r and tmr != 0:
-            if random.randint(1, 100) <= 10:  # 10%の確率でボール状の障害物
+            r2 = random.randint(0, 100)
+            if r2 <= 10:  # 10%の確率でボール状の障害物
                 objs.add(Object_ball())
+            elif r2 <= 30:
+                objs.add(Object2())
             else:  # 90%の確率で通常の長方形の障害物
                 objs.add(Object())
         
