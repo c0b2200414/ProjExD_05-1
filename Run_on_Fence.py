@@ -19,12 +19,14 @@ class Player(pg.sprite.Sprite):
         初期化メソッド
         """
         super().__init__()
-        self.imgs = [pg.transform.rotozoom(pg.image.load(f"ex05/fig/run{i}.png"), 0, 0.4) for i in range(1, 4)]  # アクションに合わせた画像をすべて読み込む
+        self.imgs = [pg.transform.rotozoom(pg.image.load(f"ex05/fig/run{i+1}.png"), 0, 0.4) for i in range(3)]  # アクションに合わせた画像をすべて読み込む
+        self.imgs_m = [pg.transform.rotozoom(pg.image.load(f"ex05/fig/muteki{i+1}.png"), 0, 0.4) for i in range(2)] #画像をmutekiに変える
         self.img = self.imgs[0]  # 描画画像の初期化
         self.width = self.img.get_width()
         self.height = self.img.get_height()
         self.image = pg.Surface((self.width*3/4, self.height))  # キャラ画像とは別に当たり判定を設定
         pg.Surface.fill(self.image, (100, 100, 100))
+        pg.Surface.set_colorkey(self.image, (100, 100, 100))
         self.rect = self.image.get_rect()
         self.rect.bottom = HEIGHT - 174
         self.rect.centerx = WIDTH/2
@@ -33,6 +35,17 @@ class Player(pg.sprite.Sprite):
         self.jump = False  # ジャンプ中か否かの変数
         self.jump_tmr = 0  # ジャンプ時間を格納する変数
         self.sliding = False #スライディング中か否かの変数
+        self.state = "normal" 
+        self.hyper_time = -1
+
+    def change_state(self, state: str, hyper_time: int):
+        """
+        棒人間の状態（normal or hyper）を切り替えるメソッド
+        引数1 state：棒人間の状態 normal or hyper
+        引数2 hyper_time：無敵時間
+        """
+        self.state = state
+        self.hyper_time = hyper_time
     
     def update(self, screen: pg.Surface):
         """
@@ -51,14 +64,24 @@ class Player(pg.sprite.Sprite):
                 self.jump_tmr = 0
             screen.blit(self.img, self.rect)
 
-        elif self.sliding:
+        elif self.sliding and self.state == "normal":
             self.image = self.imgs[2]
             self.rect = self.image.get_rect()
             self.rect.centerx = WIDTH/2
             self.rect.bottom = HEIGHT-185
             self.sliding_tmr = 0
             screen.blit(self.image, self.rect) #スライディングしているキャラクターを描画
-                
+
+        elif self.state == "hyper": #hyperモードだったら
+            self.tmr += 1
+            if self.tmr % 5 == 0:  # 画像を0.1秒ごとに切り替え
+                self.num_r += 1
+                self.img = self.imgs_m[self.num_r%2]
+            self.hyper_time -= 1 #持続時間を-1する
+            screen.blit(self.img, self.rect)
+            if self.hyper_time < 0: #持続時間がなくなったら
+                self.change_state("normal", -1) #normalに切り替える    
+        
         else:  # 走行中の動作
             self.image = pg.Surface((self.width*3/4, self.height))  # キャラ画像とは別に当たり判定を設定
             pg.Surface.fill(self.image, (100, 100, 100))
@@ -70,6 +93,8 @@ class Player(pg.sprite.Sprite):
             self.rect.bottom = HEIGHT - 174
             self.rect.centerx = WIDTH/2
             screen.blit(self.img, self.rect)
+
+        
 
 
 class Object(pg.sprite.Sprite):
@@ -209,8 +234,11 @@ def main():
                     player.jump = True
                 if event.key == pg.K_DOWN:
                     player.sliding = True #下キーでスライディング
+                if event.key == pg.K_RSHIFT: #右shiftを押したと
+                        player.change_state("hyper",200) #hyperモードに切り替える
             else:
                 player.sliding = False
+
         
         for i in range(len(bgs)):  # 背景画像を複数枚同時に処理
             screen.blit(bgs[i], [WIDTH*i-bg_x, 0])
@@ -231,11 +259,14 @@ def main():
         
         for obj in objs:  # 複数の障害物を同時に処理
             obj.update(screen)
-        
-        for obj in pg.sprite.spritecollide(player, objs, True):  # キャラの当たり判定と障害物の衝突判定
-            time.sleep(2)
-            return
 
+        if player.state == "normal":
+            for obj in pg.sprite.spritecollide(player, objs, True):  # キャラの当たり判定と障害物の衝突判定
+                time.sleep(2)
+                return
+        else:
+            pass
+        
         player.update(screen)
         timer.update(screen, tmr)
         pg.display.update()
