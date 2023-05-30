@@ -182,6 +182,37 @@ class Object_ball(pg.sprite.Sprite):
             self.kill()
 
 
+class Barrir(pg.sprite.Sprite):
+    """
+    バリアに関するクラス
+    """
+
+    def __init__(self, player: pg.Surface, size: int, life: int):
+        """
+        バリアSurfaceを生成する
+        引数1 player：バリアを発生させる棒人間
+        引数2 size：バリアの半径
+        引数3 life：バリアの発動時間
+        """
+        super().__init__()
+        self.image = pg.Surface((2*size, 2*size), flags=pg.SRCALPHA)      
+        pg.draw.circle(self.image, (1, 0, 0, 100), (size, size), size)   #円状のバリア設定
+        self.image.set_colorkey((0, 0, 0))                               #色の調整
+        self.rect = self.image.get_rect()                                   
+        self.life = life
+        self.rect.center = player.rect.center
+    
+    def update(self, player):
+        """
+        バリアの発動時間を減少させる
+        発動時間が0未満になったとき，バリアをGroupから削除する
+        """
+        self.rect.center = player.rect.center
+        self.life -= 1
+        if self.life < 0:
+            self.kill()
+
+
 class Time:
     """
     経過時間を表示するクラス
@@ -221,6 +252,7 @@ def main():
     objs = pg.sprite.Group()
     player = Player()
     timer = Time()
+    barrir = pg.sprite.Group()
     
     while True:
         bg_x = tmr % 3200
@@ -236,6 +268,9 @@ def main():
                     player.sliding = True #下キーでスライディング
                 if event.key == pg.K_RSHIFT: #右shiftを押したと
                         player.change_state("hyper",200) #hyperモードに切り替える
+                if event.key == pg.K_TAB:                 # 押されたキーがTABキーを押したとき
+                    barrir.add(Barrir(player, 110, 500))  # Barrirのグループに追加
+
             else:
                 player.sliding = False
 
@@ -260,6 +295,9 @@ def main():
         for obj in objs:  # 複数の障害物を同時に処理
             obj.update(screen)
 
+        for obj in pg.sprite.groupcollide(objs, barrir, True, True).keys():
+            pass
+
         if player.state == "normal":
             for obj in pg.sprite.spritecollide(player, objs, True):  # キャラの当たり判定と障害物の衝突判定
                 time.sleep(2)
@@ -267,6 +305,8 @@ def main():
         else:
             pass
         
+        barrir.update(player)
+        barrir.draw(screen)
         player.update(screen)
         timer.update(screen, tmr)
         pg.display.update()
