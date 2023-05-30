@@ -112,6 +112,7 @@ class Object(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.bottom = HEIGHT - 194
         self.rect.left = WIDTH
+        self.score = 0
         
     def update(self, screen: pg.Surface):
         """
@@ -135,6 +136,7 @@ class Object2(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.bottom = HEIGHT - 350
         self.rect.left = WIDTH
+        self.score = 0
         
     def update(self, screen: pg.Surface):
         self.rect.move_ip(-10, 0) #障害物2を動かす
@@ -162,6 +164,7 @@ class Object_ball(pg.sprite.Sprite):
         self.vy = 0
         self.tmr = 0  # ボールの落下の時間
         self.bounce = False  # ボールが柵と衝突したか否かを格納する変数
+        self.score = 0
     
     def update(self, screen: pg.Surface):
         """
@@ -265,7 +268,6 @@ def main():
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_SPACE:  # SPACEキーを押すとジャンプ
                     player.jump = True
-                    N += 1 #spaceを押したときカウントをプラス１する
                 if event.key == pg.K_DOWN:
                     player.sliding = True #下キーでスライディング
                 if event.key == pg.K_RSHIFT: #右shiftを押したと
@@ -305,11 +307,13 @@ def main():
             for obj in pg.sprite.spritecollide(player, objs, True):  # キャラの当たり判定と障害物の衝突判定
                 time.sleep(2)
                 return
-    
-        
-        else:
-            pass
-        
+               
+        for obj in objs:
+            if obj.score == 0:
+                if obj.rect.right <= player.rect.left:
+                    obj.score = 1
+                    N += 1
+
         score = pg.font.Font(None,80)
         txt = score.render(f"score:{N}", True, (0,0,0))
         screen.blit(txt, [100,HEIGHT - 100])
