@@ -247,7 +247,8 @@ def main():
     clock = pg.time.Clock()
     pg.display.set_caption("Run on Fence")
     screen = pg.display.set_mode((WIDTH, HEIGHT))
-    bgs = [pg.transform.rotozoom(pg.image.load("ex05/fig/background.png"), 0, 1.25) for i in range(3)]  # 背景を滑らかに動かすため複数枚読み込む
+    bgs1 = [pg.transform.rotozoom(pg.image.load("ex05/fig/background.png"), 0, 1.25) for i in range(3)]  # 背景を滑らかに動かすため複数枚読み込む
+    bgs2 = [pg.transform.rotozoom(pg.image.load("ex05/fig/background2.png"), 0, 1.25) for i in range(3)]
     fences = [pg.transform.rotozoom(pg.image.load("ex05/fig/fence.png"), 0, 1.25) for i in range(3)]  # 柵を滑らかに動かすために複数枚読み込む
     fence_rect = fences[0].get_rect()  # 柵の大きさを取得する
     tmr = 0
@@ -278,12 +279,16 @@ def main():
 
             else:
                 player.sliding = False
-
+        if tmr % 2000 == 1000:
+            bgs = bgs2
+        elif tmr % 2000 == 0:
+            bgs = bgs1
         
         for i in range(len(bgs)):  # 背景画像を複数枚同時に処理
             screen.blit(bgs[i], [WIDTH*i-bg_x, 0])
         for i in range(len(fences)):  # 柵画像を複数枚同時に処理
             screen.blit(fences[i], [WIDTH*i-fence_x, HEIGHT-fence_rect.height])
+        
         
         if tmr % 150 == 0:  # 3~5秒のランダムな間隔で障害物を生成
             n = tmr
@@ -307,11 +312,12 @@ def main():
             for obj in pg.sprite.spritecollide(player, objs, True):  # キャラの当たり判定と障害物の衝突判定
                 time.sleep(2)
                 return
-               
+
         for obj in objs:
             if obj.score == 0:
                 if obj.rect.right <= player.rect.left:
                     obj.score = 1
+
                     N += 1
 
         score = pg.font.Font(None,80)
