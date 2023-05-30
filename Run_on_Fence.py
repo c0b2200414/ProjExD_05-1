@@ -305,6 +305,8 @@ def main():
             for obj in pg.sprite.spritecollide(player, objs, True):  # キャラの当たり判定と障害物の衝突判定
                 time.sleep(2)
                 return
+    
+        
         else:
             pass
         
