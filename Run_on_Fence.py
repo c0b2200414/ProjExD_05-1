@@ -248,6 +248,7 @@ def main():
     fences = [pg.transform.rotozoom(pg.image.load("ex05/fig/fence.png"), 0, 1.25) for i in range(3)]  # 柵を滑らかに動かすために複数枚読み込む
     fence_rect = fences[0].get_rect()  # 柵の大きさを取得する
     tmr = 0
+    N = 0
     
     objs = pg.sprite.Group()
     player = Player()
@@ -264,12 +265,14 @@ def main():
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_SPACE:  # SPACEキーを押すとジャンプ
                     player.jump = True
+                    N += 1 #spaceを押したときカウントをプラス１する
                 if event.key == pg.K_DOWN:
                     player.sliding = True #下キーでスライディング
                 if event.key == pg.K_RSHIFT: #右shiftを押したと
                         player.change_state("hyper",200) #hyperモードに切り替える
                 if event.key == pg.K_TAB:                 # 押されたキーがTABキーを押したとき
                     barrir.add(Barrir(player, 110, 500))  # Barrirのグループに追加
+
 
             else:
                 player.sliding = False
@@ -305,6 +308,10 @@ def main():
         else:
             pass
         
+        score = pg.font.Font(None,80)
+        txt = score.render(f"score:{N}", True, (0,0,0))
+        screen.blit(txt, [100,HEIGHT - 100])
+
         barrir.update(player)
         barrir.draw(screen)
         player.update(screen)
